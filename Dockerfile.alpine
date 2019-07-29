@@ -1,0 +1,58 @@
+FROM alpine:edge
+
+COPY winhttp_2ksp4.verb coolq.reg luna.msstyles x11vnc.apk x11vnc.rsa.pub /tmp/
+COPY cq /usr/local/bin/cq
+USER root
+
+RUN echo "http://dl-3.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories && \
+	apk add --no-cache --update --upgrade bash freetype wine \
+		git \
+		supervisor \
+		x11vnc \
+		wget \
+		xvfb \ 
+		&& \
+	mv /tmp/x11vnc.rsa.pub /etc/apk/keys/-58b7ee0c.ras.pub && \
+	git clone --depth 1 https://github.com/novnc/websockify /root/noVNC/utils/websockify && \
+	rm -rf /root/noVNC/.git && \
+	wget -O /usr/local/bin/winetricks https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks && \
+	chmod 755 /usr/local/bin/winetricks && \
+	chmod 755 /usr/local/bin/cq && \
+	wine64 wineboot --init 2>&1 > /dev/bull || true && \
+	mkdir -p ~/.wine/drive_c/windows/Resources/Themes/luna/ && \
+	cp /tmp/luna.msstyles ~/.wine/drive_c/windows/Resources/Themes/luna/luna.msstyles && \
+	wine64 regedit.exe /s /tmp/coolq.reg && \
+	echo 'quiet=on' > /etc/wgetrc && \
+	/usr/local/bin/winetricks -q win7 && \
+	/usr/local/bin/winetricks -q /tmp/winhttp_2ksp4.verb && \
+	/usr/local/bin/winetricks -q msscript && \
+	/usr/local/bin/winetricks -q fontsmooth=rgb && \
+	wget https://dlsec.cqp.me/docker-simsun -O /tmp/simsun.zip && \
+	rm /etc/wgetrc && \
+	mkdir -p /home/user/.wine/drive_c/windows/Fonts && \
+	unzip /tmp/simsun.zip -d /home/user/.wine/drive_c/windows/Fonts && \
+	rm -f /tmp/simsun.zip && \
+	mkdir /home/user/coolq && \
+	rm -rf /home/user/.cache/winetricks && \
+	rm -rf /root/noVNC/utils/websockify/.git && \
+	apk del git && \
+	sed -i -- "s/ps -p/ps -o pid | grep/g" /root/noVNC/utils/launch.sh && \
+	rm -fr /var/cache/apk/*
+
+ENV LANGUAGE=zh_CN.UTF-8 \
+    LC_ALL=zh_CN.UTF-8 \
+    LANG=zh_CN.UTF-8 \
+    DISPLAY=:11 \
+    TZ=Asia/Shanghai \
+    TZ=UTC-8 \
+    HOME=/root \
+    DEBIAN_FRONTEND=noninteractive \
+    LANG=en_US.UTF-8 \
+    LANGUAGE=en_US.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    DISPLAY=:0.0 \
+    DISPLAY_WIDTH=1024 \
+    DISPLAY_HEIGHT=768
+
+
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
