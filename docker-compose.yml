@@ -1,0 +1,11 @@
+version: '2'
+services:
+  wine-program:
+    image: 'ediary:base'
+    environment:
+      - VNC_GEOMETRY=1024x768
+      - VNC_PASSWD=password
+    ports:
+      - '60090:9000'
+    volumes:
+      - '/data:/home/user/coolq'
